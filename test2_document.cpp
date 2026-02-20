@@ -4,7 +4,9 @@
     
     Hardware:
     - 3 × BTS7960 H-bridge modules → control 3 linear actuators (DC motors)
-    - 2 × DM860H stepper drivers → control 2 NEMA 23 stepper motors
+    - 2(1) × DM860H stepper drivers → control 2(1) NEMA 23 stepper motors
+    - (2 TB6600 stepper driver - control 2 NEMA 17 motors)
+    - (2nd possiblity - 1 )
     - 1 × 35kg metal gear servo → gripper
     
     Pin mapping (based on your notes):
