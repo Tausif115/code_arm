@@ -1,0 +1,37 @@
+1.DC1 <speed>
+Controls linear actuator / DC motor 1 (connected to BTS1)
+Positive number (e.g. DC1 150): Moves forward at speed 150/255
+Negative number (e.g. DC1 -80): Moves reverse at speed 80/255
+2.DC1 0: Stops actuator 1 immediately (coasts)
+
+3.DC2 <speed>
+Same as above, but for linear actuator / DC motor 2 (BTS2)
+4.DC3 <speed>
+Same as above, but for linear actuator / DC motor 3 (BTS3)
+5.S1 <steps>
+Moves stepper motor 1 (DM860H on pins 12/13) by a relative number of steps
+Positive = one direction
+Negative = opposite direction
+Example: S1 500 → 500 steps forward, S1 -1200 → 1200 steps backward
+
+6.S2 <steps>
+Moves stepper motor 2 (DM860H on pins 47/48) by a relative number of steps
+(same behavior as S1)
+7.POS1 <position>
+Moves stepper motor 1 to an absolute position (in steps, counted from where it thinks position 0 is)
+Examples:
+POS1 0 → go back to software home / zero
+POS1 3000 → go to step position 3000
+
+8.GRIP <angle>
+Sets the gripper servo to a specific angle
+Range: 0 to 180 degrees
+Examples:
+GRIP 0 → usually fully closed
+GRIP 90 → middle / neutral
+GRIP 180 → usually fully open
+
+9.STOP
+Immediately stops all motors (all 3 DC actuators + both steppers)
+10.ESTOP
+Same as STOP (emergency stop alias)
