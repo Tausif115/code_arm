@@ -1,80 +1,85 @@
 #include <AccelStepper.h>
 #include <Servo.h>
 
-// --- ROVER DRIVE PINS (BTS7960) ---
-const int Motor_1_Left[]  = {10, 11, 12, 13}; //
-const int Motor_2_Right[] = {3, 2, 50, 51};   //
-const int Motor_3_Left[]  = {6, 7, 8, 9};     //
-const int Motor_4_Right[] = {4, 5, 34, 35};   //
+// BTS7960 Linear Actuators: {RPWM, LPWM, REN, LEN} 
+const int BTS1[] = {5, 6, 22, 23};   
+const int BTS2[] = {2, 3, 24, 25};   
+const int BTS3[] = {7, 8,  9, 10};   
 
-// --- ARM STEPPER PINS ---
-AccelStepper stepperBase(AccelStepper::DRIVER, 12, 13); // NEMA 23
-AccelStepper stepperJoint2(AccelStepper::DRIVER, 47, 48); // NEMA 17
-AccelStepper stepperJoint3(AccelStepper::DRIVER, 43, 44); // NEMA 17
+// --- Steppers (PUL, DIR) ---
+AccelStepper stepper1(AccelStepper::DRIVER, 12, 13); // NEMA 23 (DM860H)
+AccelStepper stepper2(AccelStepper::DRIVER, 47, 48); // NEMA 17 (TB6600)
+AccelStepper stepper3(AccelStepper::DRIVER, 49, 50); // NEMA 17 (TB6600)
 
-// --- GRIPPER SERVO ---
+// Gripper 
 Servo gripper;
-const int gripperPin = 45; //
+const int gripperPin = 9; 
+#define ENA_ACTIVE LOW 
 
 void setup() {
   Serial.begin(115200);
-  
-  // Initialize Rover Drive Motors
-  initBTS(Motor_1_Left); initBTS(Motor_2_Right);
-  initBTS(Motor_3_Left); initBTS(Motor_4_Right);
 
-  // Initialize Arm Steppers
-  stepperBase.setMaxSpeed(1000); stepperBase.setAcceleration(500);
-  stepperJoint2.setMaxSpeed(800); stepperJoint2.setAcceleration(400);
-  stepperJoint3.setMaxSpeed(800); stepperJoint3.setAcceleration(400);
+  // Initialize BTS7960 Pins
+  int allBtsPins[] = {2,3,5,6,7,8,9,10,22,23,24,25};
+  for (int p : allBtsPins) { pinMode(p, OUTPUT); digitalWrite(p, LOW); }
 
-  gripper.attach(gripperPin);
+  // Enable BTS Bridges
+  digitalWrite(BTS1[2], HIGH); digitalWrite(BTS1[3], HIGH);
+  digitalWrite(BTS2[2], HIGH); digitalWrite(BTS2[3], HIGH);
+  digitalWrite(BTS3[2], HIGH); digitalWrite(BTS3[3], HIGH);
+
+  // Stepper Enable Pins
+  pinMode(11, OUTPUT); digitalWrite(11, ENA_ACTIVE); // NEMA 23
+  pinMode(46, OUTPUT); digitalWrite(46, ENA_ACTIVE); // NEMA 17-1
+  pinMode(51, OUTPUT); digitalWrite(51, ENA_ACTIVE); // NEMA 17-2
+
+  // Stepper Tuning
+  stepper1.setMaxSpeed(800);  stepper1.setAcceleration(400);
+  stepper2.setMaxSpeed(1200); stepper2.setAcceleration(600);
+  stepper3.setMaxSpeed(1200); stepper3.setAcceleration(600);
 }
 
 void loop() {
-  // Non-blocking stepper updates
-  stepperBase.run();
-  stepperJoint2.run();
-  stepperJoint3.run();
+  stepper1.run();
+  stepper2.run();
+  stepper3.run();
 
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
+    if (cmd.length() == 0) return;
 
-    // --- ROVER MOVEMENT ---
-    if (cmd.startsWith("DRIVE")) { // Format: DRIVE <leftSpeed> <rightSpeed>
-      int spaceIdx = cmd.indexOf(' ', 6);
-      int L = cmd.substring(6, spaceIdx).toInt();
-      int R = cmd.substring(spaceIdx + 1).toInt();
-      driveBTS(Motor_1_Left, L); driveBTS(Motor_3_Left, L);
-      driveBTS(Motor_2_Right, R); driveBTS(Motor_4_Right, R);
+    // Linear Actuators
+    if (cmd.startsWith("DC")) {
+      int joint = cmd.substring(2,3).toInt();
+      int speed = constrain(cmd.substring(4).toInt(), -255, 255);
+      if (joint == 1) setBTS(BTS1, speed);
+      else if (joint == 2) setBTS(BTS2, speed);
+      else if (joint == 3) setBTS(BTS3, speed);
     }
-    // --- ARM MOVEMENT ---
-    else if (cmd.startsWith("BASE")) stepperBase.move(cmd.substring(5).toInt());
-    // --- GRIPPER (360 LIMIT) ---
-    else if (cmd.startsWith("GRIP")) {
-      int angle = constrain(cmd.substring(5).toInt(), 0, 180);
-      gripper.write(angle);
+    // Steppers (Relative Move)
+    else if (cmd.startsWith("S1 ")) stepper1.move(cmd.substring(3).toInt());
+    else if (cmd.startsWith("S2 ")) stepper2.move(cmd.substring(3).toInt());
+    else if (cmd.startsWith("S3 ")) stepper3.move(cmd.substring(3).toInt());
+    
+    // Gripper Control (with Auto-Attach)
+    else if (cmd.startsWith("GRIP ")) {
+      if(!gripper.attached()) gripper.attach(gripperPin);
+      gripper.write(cmd.substring(5).toInt());
+    }
+    else if (cmd == "GRIP_OFF") {
+      gripper.detach(); // Stops Jittering
     }
     else if (cmd == "STOP") {
-      stopAll();
+      setBTS(BTS1, 0); setBTS(BTS2, 0); setBTS(BTS3, 0);
+      stepper1.stop(); stepper2.stop(); stepper3.stop();
+      gripper.detach();
     }
   }
 }
 
-void initBTS(const int p[]) {
-  for(int i=0; i<4; i++) pinMode(p[i], OUTPUT);
-  digitalWrite(p[2], HIGH); digitalWrite(p[3], HIGH);
-}
-
-void driveBTS(const int p[], int spd) {
-  spd = constrain(spd, -255, 255);
-  if (spd > 0) { analogWrite(p[0], spd); analogWrite(p[1], 0); }
-  else { analogWrite(p[0], 0); analogWrite(p[1], abs(spd)); }
-}
-
-void stopAll() {
-  driveBTS(Motor_1_Left, 0); driveBTS(Motor_2_Right, 0);
-  driveBTS(Motor_3_Left, 0); driveBTS(Motor_4_Right, 0);
-  stepperBase.stop(); stepperJoint2.stop(); stepperJoint3.stop();
+void setBTS(const int bts[], int speed) {
+  if (speed > 0) { analogWrite(bts[0], speed); analogWrite(bts[1], 0); }
+  else if (speed < 0) { analogWrite(bts[0], 0); analogWrite(bts[1], -speed); }
+  else { analogWrite(bts[0], 0); analogWrite(bts[1], 0); }
 }
