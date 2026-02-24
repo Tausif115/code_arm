@@ -38,32 +38,45 @@ print("ESC: Emergency Stop All Motors")
 try:
     while True:
         # 1. Linear Actuators (Momentary)
-        if keyboard.is_pressed('q'): send("DC1 255")
-        elif keyboard.is_pressed('a'): send("DC1 -255")
-        else: send("DC1 0")
+        if keyboard.is_pressed('q'): 
+            send("DC1 255")
+        elif keyboard.is_pressed('a'): 
+            send("DC1 -255")
+        else: 
+            send("DC1 0")
 
-        if keyboard.is_pressed('w'): send("DC2 255")
-        elif keyboard.is_pressed('s'): send("DC2 -255")
-        else: send("DC2 0")
+        if keyboard.is_pressed('w'): 
+            send("DC2 255")
+        elif keyboard.is_pressed('s'): 
+            send("DC2 -255")
+        else: 
+            send("DC2 0")
 
-        if keyboard.is_pressed('e'): send("DC3 255")
-        elif keyboard.is_pressed('d'): send("DC3 -255")
-        else: send("DC3 0")
+        if keyboard.is_pressed('e'): 
+            send("DC3 255")
+        elif keyboard.is_pressed('d'): 
+            send("DC3 -255")
+        else: 
+            send("DC3 0")
 
         # 2. NEMA 23 Steppers (Incremental) 
         # Base Rotation
-        if keyboard.is_pressed('right'): send("S1 200")
-        elif keyboard.is_pressed('left'): send("S1 -200")
+        if keyboard.is_pressed('right'): 
+            send("S1 200")
+        elif keyboard.is_pressed('left'): 
+            send("S1 -200")
         
         # Gripper Tilt (New NEMA 23 on pins 40,41,42)
-        if keyboard.is_pressed('up'): send("S2 150")
-        elif keyboard.is_pressed('down'): send("S2 -150")
+        if keyboard.is_pressed('up'): 
+            send("S2 200")
+        elif keyboard.is_pressed('down'): 
+            send("S2 -200")
 
         # 3. Gripper Toggle Logic 
         g_now = keyboard.is_pressed('g')
         if g_now and not last_g_state:
             if not gripper_open:
-                send("GRIP 70")
+                send("GRIP 180")
                 gripper_open = True
             else:
                 send("GRIP 0")
