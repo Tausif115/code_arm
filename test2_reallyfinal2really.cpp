@@ -1,18 +1,18 @@
 #include <AccelStepper.h>
 #include <Servo.h>
 
-// --- BTS7960 Linear Actuators (DC Motors) ---
+// BTS7960 Linear Actuators (DC Motors) 
 const int BTS1[] = {5, 6, 22, 23};   
 const int BTS2[] = {2, 3, 24, 25};   
 const int BTS3[] = {7, 8,  9, 10};   
 
-// --- Steppers (PUL, DIR) ---
+//  Steppers (PUL, DIR)
 // Stepper 1: Main Base (DM860H) - Pins 12, 13
 AccelStepper stepperBase(AccelStepper::DRIVER, 12, 13); 
 // Stepper 2: Wrist/Tilt (TB6600) - Pins 40, 41
 AccelStepper stepperTilt(AccelStepper::DRIVER, 40, 41); 
 
-// --- Gripper Servo ---
+// Gripper Servo 
 Servo gripper;
 const int gripperPin = 30; 
 #define ENA_ACTIVE LOW 
@@ -54,7 +54,7 @@ void loop() {
     cmd.trim();
     if (cmd.length() == 0) return;
 
-    // --- DC Linear Actuators ---
+    // DC Linear Actuators 
     if (cmd.startsWith("DC")) {
       int joint = cmd.substring(2,3).toInt();
       int speed = constrain(cmd.substring(4).toInt(), -255, 255);
@@ -63,17 +63,17 @@ void loop() {
       else if (joint == 3) setBTS(BTS3, speed);
     }
     
-    // --- Base Stepper (Relative move) ---
+    // Base Stepper (Relative move) 
     else if (cmd.startsWith("S1 ")) {
       stepperBase.move(cmd.substring(3).toInt()); 
     }
     
-    // --- Wrist Stepper (360 Rotation Logic) ---
+    // Wrist Stepper (360 Rotation Logic) 
     else if (cmd == "WRIST_CW")  stepperTilt.moveTo(fullRotationSteps);
     else if (cmd == "WRIST_CCW") stepperTilt.moveTo(-fullRotationSteps);
     else if (cmd == "WRIST_STOP") stepperTilt.stop();
     
-    // --- Gripper Control (Pin 30) ---
+    // Gripper Control (Pin 30) 
     else if (cmd.startsWith("GRIP ")) {
       int angle = cmd.substring(5).toInt();
       if(!gripper.attached()) gripper.attach(gripperPin);
